@@ -3,5 +3,6 @@ display_name: 教师管理
 desc: 教师教学辅助插件：通知/任务分发与回复收集、聊天总结（含定时规则+目标方同意授权）、学情档案、EULA 门禁
 version: v1.0.0
 author: DPenguin
+repo: https://github.com/DPen9uin/astrbot_plugin_teacher_manager
 astrbot_version: ">=4.27.3"
 support_platforms: [aiocqhttp]
