@@ -1,0 +1,218 @@
+{
+  "basic": {
+    "description": "基础",
+    "hint": "管理员身份与 EULA 使用条款门禁",
+    "type": "object",
+    "items": {
+      "admin_qqs": {
+        "description": "管理员（教师）QQ 号",
+        "hint": "只有列表内的管理员才能触发教学管理功能。多名管理员用逗号隔开",
+        "type": "list",
+        "default": []
+      },
+      "eula_enabled": {
+        "description": "EULA 门禁开关",
+        "hint": "开启后，新用户首次使用前必须回复“同意”（群聊需 @bot）",
+        "type": "bool",
+        "default": true
+      },
+      "eula_text": {
+        "description": "EULA 内容",
+        "hint": "首次对话时发送给新用户的使用条款",
+        "type": "text",
+        "default": "欢迎使用！为保护学生隐私与教学秩序，使用前请知悉：\n1. 你的对话记录将被收录用于学情分析（仅教师可见，数据本地存储）；\n2. 请勿在对话中透露个人敏感信息（身份证号、家庭住址等隐私）；\n3. 本智能体的教学管理功能由教师账号管理，答疑内容仅供参考。\n回复“同意”即表示你接受以上条款（群聊请 @bot 后回复“同意”）。"
+      },
+      "eula_deny_tip": {
+        "description": "未同意时的回复提示",
+        "hint": "{name} 会被替换为用户昵称",
+        "type": "text",
+        "default": "{name}，使用前需要先同意使用条款：请 @我 并回复“同意”哦～"
+      }
+    }
+  },
+  "llm_intent": {
+    "description": "LLM 与意图识别",
+    "hint": "模型选择、意图识别模式与关键词",
+    "type": "object",
+    "items": {
+      "llm_model": {
+        "description": "LLM 模型 ID",
+        "hint": "点击「选择提供商」按钮，从 AstrBot 已启用的 LLM 提供商中选择；留空则使用当前会话默认模型",
+        "type": "string",
+        "_special": "select_provider",
+        "default": ""
+      },
+      "llm_retry_count": {
+        "description": "LLM 调用失败重试次数",
+        "hint": "调用 LLM 失败时自动重试的次数（拖滑块选 0~10），0 表示失败立即报错不重试",
+        "type": "int",
+        "slider": {
+          "min": 0,
+          "max": 10,
+          "step": 1
+        },
+        "default": 2
+      },
+      "intent_mode": {
+        "description": "自然语言意图识别模式",
+        "hint": "hybrid=LLM 语义判断优先，LLM 异常时自动回退关键词（强烈推荐）；keywords=仅关键词快速识别；llm=只使用 LLM 语义判断（必须配置 LLM 提供商）",
+        "type": "string",
+        "options": [
+          "hybrid",
+          "keywords",
+          "llm"
+        ],
+        "default": "hybrid"
+      },
+      "intent_question_filter": {
+        "description": "疑问句过滤开关",
+        "hint": "开启后，带疑问语气（吗/呢/？/怎么/为什么/是否等）的消息一律不触发任何教学功能，避免问功能/问配置时误触发；关闭则全部交给意图识别",
+        "type": "bool",
+        "default": true
+      },
+      "keywords_dispatch": {
+        "description": "推送/任务关键词",
+        "hint": "仅 keywords/hybrid 模式使用；命中即视为「推送/布置任务」意图。留空使用默认（帮我推送）。支持正则写法",
+        "type": "list",
+        "default": [
+          "帮我推送"
+        ]
+      },
+      "keywords_summary": {
+        "description": "总结关键词",
+        "hint": "仅 keywords/hybrid 模式使用；命中即视为「总结」意图。留空使用默认（帮我总结）。支持正则写法",
+        "type": "list",
+        "default": [
+          "帮我总结"
+        ]
+      },
+      "keywords_profile": {
+        "description": "档案关键词",
+        "hint": "仅 keywords/hybrid 模式使用；命中即视为「查档案」意图。留空使用默认（帮我分析档案）。支持正则写法",
+        "type": "list",
+        "default": [
+          "帮我分析档案"
+        ]
+      },
+      "keywords_rule": {
+        "description": "定时规则关键词",
+        "hint": "仅 keywords/hybrid 模式使用；命中即视为「设置定时规则」意图。留空使用默认（设置定时总结）。支持正则写法",
+        "type": "list",
+        "default": [
+          "设置定时总结"
+        ]
+      },
+      "intent_prompt": {
+        "description": "意图识别提示词",
+        "hint": "{msg} 会被替换为用户消息。hybrid/llm 模式用 LLM 判断意图",
+        "type": "text",
+        "default": "你是教学管理助手的意图识别器。判断用户消息属于哪个功能意图，只输出 JSON：{\"intent\": \"dispatch|summary|profile|rule|confirm_dispatch|confirm_summary|collect_now|cancel|none\", \"target\": \"识别到的对象称呼，没有则空\", \"window\": \"总结窗口如'2天'，没有则空\"}。判断规则：1) 只有教师【直接下达指令】才算意图——向群/某个人推送通知或任务→dispatch；总结某个会话的聊天→summary；查询用户档案/薄弱点/进步/成绩→profile；管理定时总结规则→rule；单独回复'确认/确定'→confirm_dispatch；单独回复'同意'（总结申请语境）→confirm_summary；单独回复'收/截止/统计回复'→collect_now；单独回复'取消'→cancel。2) 重要：疑问句、询问功能用法、讨论配置是否生效、闲聊，或带'吗/呢/？/怎么/为什么/是否'的句子→一律 none。示例：\"总结的问题修好了吗\"→none；\"这个总结同意有效期确定能够起效吗\"→none；\"定时总结功能怎么用\"→none；\"总结一下三班今天聊了什么\"→summary；\"推送给三班：明天交作业\"→dispatch；\"帮我看下小明的档案\"→profile；\"设置每天晚上8点总结三班\"→rule；\"确认\"→confirm_dispatch。消息：{msg}"
+      },
+      "deadline_keywords": {
+        "description": "截止时间触发词",
+        "hint": "截止时间触发词（keywords/hybrid 的正则兜底路径使用）：内容中出现这些词且后跟时刻（如「DDL 21:15」「deadline 明天9点」）时按该时刻截止。hybrid 模式 LLM 优先，仅 LLM 无结果时才走此正则；llm 模式不涉及。留空使用默认（截止时间/截止/截至/DDL/deadline）",
+        "type": "list",
+        "default": [
+          "截止时间",
+          "截止",
+          "截至",
+          "DDL",
+          "deadline"
+        ]
+      }
+    }
+  },
+  "summary": {
+    "description": "总结",
+    "hint": "聊天总结周期、同意机制与提示词",
+    "type": "object",
+    "items": {
+      "summary_interval_hours": {
+        "description": "总结回顾窗口默认值（小时）",
+        "hint": "总结默认回顾最近 N 小时的聊天记录；支持小数（0.17≈10 分钟，0.33≈20 分钟）；填 0 表示默认用 24 小时。注意：这不是自动总结的周期，定时总结用「设置定时总结」规则（每天几点）",
+        "type": "float",
+        "default": 24
+      },
+      "include_raw_material": {
+        "description": "总结是否附带聊天原文",
+        "hint": "开启后总结会附带聊天原文 Markdown 文件（.md）发给管理员",
+        "type": "bool",
+        "default": false
+      },
+      "summary_need_agree": {
+        "description": "总结是否需要对方同意",
+        "hint": "开启（默认）：总结前需目标方回复「同意」，且受下方有效期约束；关闭：管理员发起总结直接执行，跳过同意检查与征求流程",
+        "type": "bool",
+        "default": true
+      },
+      "agreement_valid_days": {
+        "description": "总结同意有效期（天）",
+        "hint": "有效期内定时总结免二次确认；支持小数（0.5≈12 小时）；填 0 表示同意永久有效；更改此配置会重置所有已记录的同意",
+        "type": "float",
+        "default": 30
+      },
+      "summarize_prompt": {
+        "description": "聊天总结提示词",
+        "hint": "{chat} 会被替换为聊天记录原文",
+        "type": "text",
+        "default": "你是教学场景的对话总结助手。对提供的聊天记录做压缩总结：1) 按主题归类；2) 标出值得教师关注的学情信息（常问问题、薄弱知识点）；3) 输出简洁 Markdown 报告，300 字以内。聊天记录：\n{chat}"
+      }
+    }
+  },
+  "task_profile": {
+    "description": "任务与档案",
+    "hint": "任务收集窗口与处理提示词、学生档案分析",
+    "type": "object",
+    "items": {
+      "task_collect_hours": {
+        "description": "任务回复收集窗口（小时）",
+        "hint": "任务默认收集学生回复的时长，到时间自动收卷发教师；支持小数（0.17≈10 分钟）；填 0 表示不限时（不自动截止，需教师说「收」）；教师也可在对话中声明截止时间",
+        "type": "float",
+        "default": 48
+      },
+      "reply_llm_filter": {
+              "description": "收卷时用 LLM 判定回答",
+              "hint": "开启后，教师说「收」时由 LLM 判断每位学生的消息里哪些是对任务的回答，只把回答提交给教师；闲聊/提问被过滤并标注未回答。LLM 不可用时自动回退为原文转发",
+              "type": "bool",
+              "default": true
+            },
+            "reply_hist_max": {
+              "description": "每位学生保留的消息条数",
+              "hint": "供 LLM 判定用，保留每位学生最近 N 条消息；填 0 表示不限",
+              "type": "int",
+              "default": 8
+            },
+            "task_process_prompt": {
+        "description": "任务回复处理提示词",
+        "hint": "{desc} 为教师处理要求，{replies} 为回复记录",
+        "type": "text",
+        "default": "你是教师助手。以下是班级任务的回复记录，请按教师要求处理后输出给教师：\n教师要求：{desc}\n回复记录：\n{replies}"
+      },
+      "profile_prompt": {
+        "description": "档案特征总结提示词",
+        "hint": "{chats} 会被替换为该学生的对话片段",
+        "type": "text",
+        "default": "你是学情分析师。根据学生的对话片段提取：1) 常问的知识点/题型；2) 常见错误与薄弱环节；3) 学习态度与习惯信号；4) 其他教师应知信息。输出简洁 Markdown 条目，每条不超过 50 字，使用“- ”列表。对话片段：\n{chats}"
+      }
+    }
+  },
+  "alias": {
+    "description": "称呼映射",
+    "hint": "给目标对象起称呼，之后用称呼即可指定推送/总结目标",
+    "type": "object",
+    "items": {
+      "alias_map": {
+        "description": "① 个人称呼映射（私聊发给个人）",
+        "hint": "JSON 格式：{\"称呼\": \"对方QQ号\"}。示例：{\"小明\": \"2012345678\", \"课代表\": \"3012345678\"}。之后说「推送给 小明：明天交作业」，内容会私聊发给该 QQ。留空填 {}",
+        "type": "text",
+        "default": "{}"
+      },
+      "alias_group_map": {
+        "description": "② 群聊称呼映射（通知发往群）",
+        "hint": "JSON 格式：{\"称呼\": \"群号\"}。示例：{\"三班\": \"123456789\"}。之后说「推送给 三班：今晚7点答疑」，通知会发到这个群。群号在 QQ 群「群资料」页查看。留空填 {}",
+        "type": "text",
+        "default": "{}"
+      }
+    }
+  }
+}
